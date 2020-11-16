@@ -33,7 +33,8 @@ def get_events():
                 id
                 name
                 description
-                date
+                start_of_registration_datetime
+                end_of_registration_datetime
             }
         }
     """
@@ -95,7 +96,7 @@ def get_my_events(telegram):
     return response.json()
 
 
-def create_student(telegram, name, faculty, group, phone, event_id, csrf_token):
+def create_student(telegram, student_id, faculty, group, event_id, csrf_token):
 
     headers = {
         'content-type': 'application/json',
@@ -110,10 +111,10 @@ def create_student(telegram, name, faculty, group, phone, event_id, csrf_token):
     query = (
         'mutation {'
         '    createStudent(data: {'
-        f'    telegram: "{telegram}", name: "{name}", faculty: "{faculty.upper()}", group: "{group.upper()}", '
-        f'    phone: "{phone}"'
+        f'     telegram: "{telegram}", studentId: "{student_id}", faculty: "{faculty.upper()}", '
+        f'     group: "{group.upper()}"'
         '    }, event: '
-        f'"{event_id}") '
+        f'     "{event_id}") '
         '    {'
         '        ok'
         '    }'
@@ -124,7 +125,7 @@ def create_student(telegram, name, faculty, group, phone, event_id, csrf_token):
     return response.json()
 
 
-def update_student(telegram, name, faculty, group, phone, csrf_token):
+def update_student(telegram, student_id, faculty, group, csrf_token):
 
     headers = {
         'content-type': 'application/json',
@@ -139,8 +140,8 @@ def update_student(telegram, name, faculty, group, phone, csrf_token):
     query = (
         'mutation {'
         '    updateStudent(data: {'
-        f'    telegram: "{telegram}", name: "{name}", faculty: "{faculty.upper()}", group: "{group.upper()}", '
-        f'    phone: "{phone}"'
+        f'    telegram: "{telegram}", studentId: "{student_id}", faculty: "{faculty.upper()}", '
+        f'    group: "{group.upper()}"'
         '    }) '
         '    {'
         '        ok'
@@ -150,6 +151,32 @@ def update_student(telegram, name, faculty, group, phone, csrf_token):
 
     response = requests.post('http://127.0.0.1:8000/api/', headers=headers, json={'query': query}, cookies=cookies)
     return response.json()
+
+
+def is_member(student_id, csrf_token):
+    headers = {
+        'content-type': 'application/json',
+        'encoding': 'utf-8',
+        'X-CSRFToken': csrf_token
+    }
+
+    cookies = {
+        'csrftoken': csrf_token
+    }
+
+    query = (
+        'query {'
+        '    isMember('
+        f'    studentId: "{student_id}")'
+        '    {'
+        '        membership'
+        '    }'
+        '}'
+    )
+
+    response = requests.get('http://127.0.0.1:8000/api/', headers=headers, json={'query': query}, cookies=cookies)
+
+    return response.json().get('data').get('isMember').get('membership')
 
 
 def take_part(telegram, event_id, csrf_token):
@@ -178,3 +205,40 @@ def take_part(telegram, event_id, csrf_token):
 
     response = requests.post('http://127.0.0.1:8000/api/', headers=headers, json={'query': query}, cookies=cookies)
     return response.json()
+
+
+def create_application(student_id, event_id, csrf_token):
+    headers = {
+        'content-type': 'application/json',
+        'encoding': 'utf-8',
+        'X-CSRFToken': csrf_token
+    }
+
+    cookies = {
+        'csrftoken': csrf_token
+    }
+
+    query = (
+        'mutation {'
+        '    createApplication(data: {'
+        f'     studentId: "{student_id}", event: "{event_id}")'
+        '    {'
+        '        ok'
+        '    }'
+        '}'
+    )
+
+    response = requests.post('http://127.0.0.1:8000/api/', headers=headers, json={'query': query}, cookies=cookies)
+    return response.json()
+
+
+def create_application_for_new_user(telegram, student_id,
+                                    faculty, group,
+                                    event_id, csrf_token):
+    student = create_student(telegram, student_id, faculty, group, event_id, csrf_token)
+
+    if student:
+        application = create_application(student_id, event_id, csrf_token)
+        return application
+
+    return {'data': None}

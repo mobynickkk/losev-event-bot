@@ -1,12 +1,13 @@
 import telebot
 from telebot import types
-from utils import get_events, get_me, create_student, update_student, take_part, get_my_events, get_month
+from utils import get_events, get_me, update_student, take_part, get_my_events, get_month, \
+    is_member, create_application, create_application_for_new_user
 
 TOKEN = "1062715318:AAEHNTnf9YdFnBI8yLH5qCUL27z8wAZfY1A"
 
 bot = telebot.AsyncTeleBot(TOKEN)
 
-csrf_token = ''
+csrf_token = ''  # csrf token storage (may be replaced with another mechanism of protection)
 
 
 @bot.message_handler(commands=['start'])
@@ -53,12 +54,12 @@ def register(msg, event_id, valid=True):
             types.KeyboardButton('Нет, хочу поменять данные')
         )
         bot.send_message(msg.chat.id,
-                         f'Это вы?\n\n{me["name"]}\n{me["faculty"]} {me["group"]}\n{me["phone"]}',
+                         f'Это вы?\n\n{me["student_id"]}\n{me["faculty"]} {me["group"]}',
                          reply_markup=markup
                          ).wait()
     else:
         markup = types.ReplyKeyboardRemove()
-        bot.send_message(msg.chat.id, 'Введите ваше ФИО', reply_markup=markup).wait()
+        bot.send_message(msg.chat.id, 'Введите номер вашего студенческого билета', reply_markup=markup).wait()
 
     bot.register_next_step_handler(msg, get_name, event_id, valid)
 
@@ -79,36 +80,50 @@ def get_name(msg, event_id, valid):
             bot.send_message(msg.chat.id, 'Вы успешно зарегистрированы!', reply_markup=markup).wait()
         else:
             bot.send_message(msg.chat.id, 'Что-то пошло не так', reply_markup=markup).wait()
+
     elif msg.text == 'Нет, хочу поменять данные':
         register(msg, event_id, False)
+
     else:
-        name = msg.text
-        bot.send_message(msg.chat.id, 'Введите ваш факультет в сокращенном виде').wait()
-        bot.register_next_step_handler(msg, get_faculty, event_id, name, valid)
+        student_id = msg.text
+
+        markup = types.ReplyKeyboardMarkup()
+        markup.add(
+            types.KeyboardButton('Показать другие мероприятия'),
+            types.KeyboardButton('Показать мои мероприятия')
+        )
+
+        if is_member(student_id, csrf_token):
+            response_application = create_application(student_id, event_id, csrf_token)
+            response_update = take_part(msg.chat.username, event_id, csrf_token)
+            if response_update['data'].get('updateStudent') and response_update['data'].\
+                get('updateStudent')['ok'] and response_application['data'].get('createApplication') and\
+                response_application['data'].get('createApplication')['ok']:
+                bot.send_message(msg.chat.id, 'Вы успешно зарегистрированы!', reply_markup=markup).wait()
+            else:
+                bot.send_message(msg.chat.id, 'Что-то пошло не так', reply_markup=markup).wait()
+        else:
+            bot.send_message(msg.chat.id, 'Введите ваш факультет в сокращенном виде').wait()
+            bot.register_next_step_handler(msg, get_faculty, event_id, student_id, valid)
 
 
-def get_faculty(msg, event_id, name, valid):
+def get_faculty(msg, event_id, student_id, valid):
     faculty = msg.text
     bot.send_message(msg.chat.id, 'Введите вашу группу').wait()
-    bot.register_next_step_handler(msg, get_group, event_id, name, faculty, valid)
+    bot.register_next_step_handler(msg, get_group, event_id, student_id, faculty, valid)
 
 
-def get_group(msg, event_id, name, faculty, valid):
+def get_group(msg, event_id, student_id, faculty, valid):
     group = msg.text
-    bot.send_message(msg.chat.id, 'Введите ваш номер телефона').wait()
-    bot.register_next_step_handler(msg, get_phone, event_id, name, faculty, group, valid)
-
-
-def get_phone(msg, event_id, name, faculty, group, valid):
-
-    phone = msg.text
     if valid:
-        response = create_student(msg.chat.username, name,
-                                  faculty, group, phone,
-                                  event_id, csrf_token)
+        response_student = None
+        response_application = create_application_for_new_user(msg.chat.username, student_id,
+                                faculty, group,
+                                event_id, csrf_token)
     else:
-        response = update_student(msg.chat.username, name,
-                                  faculty, group, phone, csrf_token)
+        response_student = update_student(msg.chat.username, student_id,
+                                  faculty, group, csrf_token)
+        response_application = create_application(student_id, event_id, csrf_token)
 
     markup = types.ReplyKeyboardMarkup()
     markup.add(
@@ -116,22 +131,28 @@ def get_phone(msg, event_id, name, faculty, group, valid):
         types.KeyboardButton('Показать мои мероприятия')
     )
 
-    if response['data'].get('createStudent') and response['data'].get('createStudent')['ok']:
+    if response_application['data'].get('createApplication') and\
+            response_application['data'].get('createApplication')['ok']:
+
         bot.send_message(msg.chat.id, 'Вы успешно зарегистрированы!', reply_markup=markup).wait()
-    elif response['data'].get('updateStudent') and response['data'].get('updateStudent')['ok']:
+
+    if response_student and response_student['data'].get('updateStudent') and\
+            response_student['data'].get('updateStudent')['ok']:
+
         bot.send_message(msg.chat.id, 'Ваши данные успешно обновлены!').wait()
         response = take_part(msg.chat.username, event_id, csrf_token)
+
         if response['data'].get('updateStudent') and response['data'].get('updateStudent')['ok']:
             bot.send_message(msg.chat.id, 'Вы успешно зарегистрированы!', reply_markup=markup).wait()
         else:
             bot.send_message(msg.chat.id, 'Что-то пошло не так', reply_markup=markup).wait()
+
     else:
         bot.send_message(msg.chat.id, 'Что-то пошло не так', reply_markup=markup).wait()
 
 
 @bot.message_handler(func=lambda msg: msg.text == 'Показать другие мероприятия')
 def show_events(msg):
-
     markup = types.ReplyKeyboardRemove()
     bot.send_message(msg.chat.id, '', reply_markup=markup).wait()
     send_events(msg)
@@ -147,11 +168,6 @@ def show_my_events(msg):
                          f'*{event["name"]}*\n\n{event["description"]}',
                          parse_mode='Markdown'
                          ).wait()
-
-
-def get_full_information(msg, event_id):
-    """Получение подробной информации о мероприятии"""
-    pass
 
 
 if __name__ == "__main__":
