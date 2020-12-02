@@ -19,6 +19,9 @@ def send_events(msg):
     markup = types.ReplyKeyboardRemove()
     bot.send_message(msg.chat.id, 'Список доступных мероприятий:', reply_markup=markup).wait()
 
+    print(data)
+    print(1111111)
+
     events = data['data']['events']
     for event in events:
         date_list = event['date'].split('-')
