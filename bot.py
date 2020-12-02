@@ -3,7 +3,7 @@ from telebot import types
 from utils import get_events, get_me, update_student, take_part, get_my_events, get_month, \
     is_member, create_application, create_application_for_new_user
 
-TOKEN = "1062715318:AAEHNTnf9YdFnBI8yLH5qCUL27z8wAZfY1A"
+TOKEN = "1275708679:AAGLb7r7mb87pLO4lW21QP7BhNq7P_ETdZI"
 
 bot = telebot.AsyncTeleBot(TOKEN)
 
