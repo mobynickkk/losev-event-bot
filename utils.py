@@ -33,8 +33,8 @@ def get_events():
                 id
                 name
                 description
-                start_of_registration_datetime
-                end_of_registration_datetime
+                startOfRegistrationDatetime
+                endOfRegistrationDatetime
             }
         }
     """
