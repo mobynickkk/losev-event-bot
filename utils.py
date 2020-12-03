@@ -39,7 +39,7 @@ def get_events():
         }
     """
 
-    response = requests.get('http://127.0.0.1:8000/api/', headers=headers, params={'query': query})
+    response = requests.get('http://35.158.11.40/api/', headers=headers, params={'query': query})
 
     return response.json(), response.cookies.get('csrftoken')
 
@@ -68,7 +68,7 @@ def get_me(telegram, csrf_token):
             '}'
     )
 
-    response = requests.post('http://127.0.0.1:8000/api/', headers=headers, json={'query': query}, cookies=cookies)
+    response = requests.post('http://35.158.11.40/api/', headers=headers, json={'query': query}, cookies=cookies)
 
     return response.json()
 
@@ -91,7 +91,7 @@ def get_my_events(telegram):
             '}'
     )
 
-    response = requests.get('http://127.0.0.1:8000/api/', headers=headers, params={'query': query})
+    response = requests.get('http://35.158.11.40/api/', headers=headers, params={'query': query})
 
     return response.json()
 
@@ -121,7 +121,7 @@ def create_student(telegram, student_id, faculty, group, event_id, csrf_token):
         '}'
     )
 
-    response = requests.post('http://127.0.0.1:8000/api/', headers=headers, json={'query': query}, cookies=cookies)
+    response = requests.post('http://35.158.11.40/api/', headers=headers, json={'query': query}, cookies=cookies)
     return response.json()
 
 
@@ -149,7 +149,7 @@ def update_student(telegram, student_id, faculty, group, csrf_token):
         '}'
     )
 
-    response = requests.post('http://127.0.0.1:8000/api/', headers=headers, json={'query': query}, cookies=cookies)
+    response = requests.post('http://35.158.11.40/api/', headers=headers, json={'query': query}, cookies=cookies)
     return response.json()
 
 
@@ -174,7 +174,7 @@ def is_member(student_id, csrf_token):
         '}'
     )
 
-    response = requests.get('http://127.0.0.1:8000/api/', headers=headers, json={'query': query}, cookies=cookies)
+    response = requests.get('http://35.158.11.40/api/', headers=headers, json={'query': query}, cookies=cookies)
 
     return response.json().get('data').get('isMember').get('membership')
 
@@ -203,7 +203,7 @@ def take_part(telegram, event_id, csrf_token):
         '}'
     )
 
-    response = requests.post('http://127.0.0.1:8000/api/', headers=headers, json={'query': query}, cookies=cookies)
+    response = requests.post('http://35.158.11.40/api/', headers=headers, json={'query': query}, cookies=cookies)
     return response.json()
 
 
@@ -228,7 +228,7 @@ def create_application(student_id, event_id, csrf_token):
         '}'
     )
 
-    response = requests.post('http://127.0.0.1:8000/api/', headers=headers, json={'query': query}, cookies=cookies)
+    response = requests.post('http://35.158.11.40/api/', headers=headers, json={'query': query}, cookies=cookies)
     return response.json()
 
 
